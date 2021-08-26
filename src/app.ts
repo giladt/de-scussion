@@ -107,7 +107,7 @@ export class App {
             );
           console.log({ signature , signerAddress , timestamp});
 
-          this.auth = (await axios.post(`https://theconvo.space/api/auth`, {
+          this.auth = (await axios.post(`https://theconvo.space/api/auth?apikey=CONVO`, {
             signerAddress,
             signature,
             timestamp,
