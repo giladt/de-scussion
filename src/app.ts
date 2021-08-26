@@ -1,16 +1,9 @@
 import './app.css';
 import { ethers } from 'ethers';
+import axios from 'axios';
+import { HttpClient, json } from 'aurelia-fetch-client';
+import { inject } from 'aurelia-framework';
 
-// import CeramicClient from '@ceramicnetwork/http-client';
-// import KeyDidResolver from 'key-did-resolver';
-// import ThreeIdResolver from '@ceramicnetwork/3id-did-resolver';
-// import { ThreeIdConnect,  EthereumAuthProvider } from '@3id/connect';
-// import { DID } from 'dids';
-// import { TileDocument } from '@ceramicnetwork/stream-tile';
-// import { SyncOptions } from '@ceramicnetwork/common';
-// import { StreamID } from '@ceramicnetwork/streamid';
-
-import {Client, PrivateKey, createUserAuth, KeyInfo, UserAuth, GetThreadResponse} from '@textile/hub';
 interface IMessage {
   origin: string,
   content: string,
@@ -22,15 +15,12 @@ interface IProfile {
   name: string,
 }
 
+@inject(HttpClient)
 export class App {
   public title = 'De-scussion';
   public messages: Array<IMessage> = [];
   private message: string;
-  // private profile: IProfile = {
-  //   cid: 'bafybeiecxd75pet7oe5c5wlyntlvxd4awnrex6ypnlruolkl2dzgiqdjia',
-  //   avatar: 'GiladTsabarWorkProfileSQ400.png',
-  //   name: 'Gilad Tsabar',
-  // }
+  private auth: { success: boolean, message: string };
 
   public wallet: {
     address: string,
@@ -38,29 +28,18 @@ export class App {
 
   private inputRef: HTMLTextAreaElement;
   private provider: any;
+  private http: HttpClient;
 
-  private client: Client;
-  private user: PrivateKey;
-  private token: string;
-  private dbs: any;
-  private threads: Array<GetThreadResponse>;
-
-  constructor() {
+  constructor(http: HttpClient) {
+    this.http = http;
+    const baseUrl = `https://theconvo.space/api/auth?apikey=CONVO`
+    http.configure(config => {
+      config.withBaseUrl(baseUrl);
+    });
     this.message = "";
     this.wallet = {
       address: '',
     }
-
-    // this.messages = [
-    //   {
-    //     origin: '0xd5804F7B89f26efeaB13440BA92A8AF3f5fCcE9b',
-    //     content: "Hello <br>World!",
-    //   },
-    //   {
-    //     origin: '0x21bF0f34752a35E989002c2e6A78D5Df6BC7aE6F',
-    //     content: 'Hello There!',
-    //   },
-    // ]
   }
 
   async isConnected():Promise<boolean> {
@@ -110,21 +89,38 @@ export class App {
             console.log('metamask not connected');
         }
     });
-
-    const userAuth = await this.auth({key: process.env.TEXTILE_KEY, secret: process.env.TEXTILE_SECRET});
-    this.client = await this.setup(userAuth);
-    this.user = await PrivateKey.fromRandom();
-    this.token = await this.client.getToken(this.user);
-    this.dbs = await this.client.newDB();
-    this.threads = await this.client.listThreads();
-    console.log({token: this.token, threads: this.threads[0].id, dbs: this.dbs});
-    console.log({ dbs: this.dbs.TileDocument });
-
   }
 
-  addMessage(): void {
+  async addMessage(): Promise<void> {
     if(!this.message) return;
-    const payload = {
+
+      // Sample signature generation code using ethers.js
+      const timestamp = Date.now();
+      const signer = await this.provider.getSigner();
+      const signerAddress = await signer.getAddress();
+      const data = `I allow this site to access my data on The Convo Space using the account ${signerAddress}. Timestamp:${timestamp}`;
+      if(!this.auth) {
+        try {
+          const signature = await this.provider.send(
+            'personal_sign',
+            [ ethers.utils.hexlify(ethers.utils.toUtf8Bytes(data)), signerAddress.toLowerCase() ]
+            );
+          console.log({ signature , signerAddress , timestamp});
+
+          this.auth = (await axios.post(`https://theconvo.space/api/auth`, {
+            signerAddress,
+            signature,
+            timestamp,
+          }));
+          console.log('auth:',this.auth);
+          console.log('signature:', signature);
+          console.log('threads:', this.auth);
+        } catch (e) {
+          console.log('User denied signature:', e);
+        }
+      }
+
+      const payload = {
       origin: this.wallet.address,
       content: this.message.replace(/\n/g, '<br>'),
     }
@@ -149,17 +145,5 @@ export class App {
       console.log('provider:',this.provider);
       this.wallet.address = (await this.provider.listAccounts())[0];
     }
-  }
-
-  async setup (auth: UserAuth):Promise<Client> {
-    return await Client.withUserAuth(auth);
-  }
-
-  async auth (keyInfo: KeyInfo):Promise<UserAuth> {
-    // Create an expiration and create a signature. 60s or less is recommended.
-    const expiration = new Date(Date.now() + 60 * 1000)
-    // Generate a new UserAuth
-    const userAuth: UserAuth = await createUserAuth(keyInfo.key, keyInfo.secret ?? '', expiration)
-    return userAuth
   }
 }

@@ -11,6 +11,8 @@
     "@textile/hub": "^6.2.0",
     "aurelia-animator-css": "^1.0.4",
     "aurelia-bootstrapper": "^2.3.3",
+    "aurelia-fetch-client": "^1.8.2",
+    "axios": "^0.21.1",
     "ethers": "^5.4.5"
   },
   "devDependencies": {
