@@ -195,12 +195,6 @@ module.exports = ( { production } = {}, { extractCss, analyze, tests, hmr, port,
     hot: hmr || project.platform.hmr,
     port: port || project.platform.port,
     host: host,
-    https: true,
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
-      "Access-Control-Allow-Headers": "X-Requested-With, content-type, Authorization"
-    },
   },
   devtool: production ? 'nosources-source-map' : 'cheap-module-eval-source-map',
   module: {
