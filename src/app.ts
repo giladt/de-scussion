@@ -1,8 +1,7 @@
 import './app.css';
 import { ethers } from 'ethers';
 import axios from 'axios';
-import { HttpClient, json } from 'aurelia-fetch-client';
-import { inject } from 'aurelia-framework';
+import { autoinject } from "aurelia-framework";
 
 interface IMessage {
   origin: string,
@@ -15,7 +14,7 @@ interface IProfile {
   name: string,
 }
 
-@inject(HttpClient)
+@autoinject
 export class App {
   public title = 'De-scussion';
   public messages: Array<IMessage> = [];
@@ -42,7 +41,6 @@ export class App {
       },
     },
   };
-  private threads: any;
   public comments: any;
 
   public wallet: {
@@ -51,14 +49,8 @@ export class App {
 
   private inputRef: HTMLTextAreaElement;
   private provider: any;
-  private http: HttpClient;
 
-  constructor(http: HttpClient) {
-    this.http = http;
-    const baseUrl = `/api/auth?apikey=CONVO`
-    http.configure(config => {
-      config.withBaseUrl(baseUrl);
-    });
+  constructor() {
     this.message = "";
     this.wallet = {
       address: '',
@@ -108,7 +100,7 @@ export class App {
         this.wallet.address = (await this.provider.listAccounts())[0];
         console.log('metamask connected', this.wallet.address);
 
-        this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=CONVO`)).data;
+        this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
         console.log('messages:', this.messages);
       } else {
         // metamask is not connected
@@ -122,14 +114,14 @@ export class App {
 
     const auth = await this.signThread();
 
-    const res = await axios.post(`https://theconvo.space/api/comments?apikey=CONVO`, {
+    const res = await axios.post(`https://theconvo.space/api/comments?apikey=${ process.env.CONVO_API_KEY }`, {
       'token': auth.message,
       'signerAddress': this.wallet.address,
       'comment': this.message,
       'threadId': 'cl_descussion',
-      'url': encodeURIComponent('http://localhost:8080/'),
+      'url': encodeURIComponent( process.env.APP_URL ),
     })
-    this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=CONVO`)).data;
+    this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
     this.message = "";
   }
 
@@ -147,7 +139,7 @@ export class App {
       await this.provider.send("eth_requestAccounts", []);
       this.wallet.address = (await this.provider.listAccounts())[0];
 
-      this.comments = await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=CONVO`);
+      this.comments = await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`);
 
     } else {
       console.log('provider:',this.provider);
@@ -172,7 +164,7 @@ export class App {
           console.log({ signature , signerAddress , timestamp});
 
           const auth = (await axios.post(
-            `https://theconvo.space/api/auth?apikey=CONVO`, 
+            `https://theconvo.space/api/auth?apikey=${ process.env.CONVO_API_KEY }`, 
             {
               signerAddress,
               signature,

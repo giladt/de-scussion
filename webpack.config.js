@@ -7,7 +7,10 @@ const project = require( './aurelia_project/aurelia.json' )
 const { AureliaPlugin, ModuleDependenciesPlugin } = require( 'aurelia-webpack-plugin' )
 const { BundleAnalyzerPlugin } = require( 'webpack-bundle-analyzer' )
 const { CleanWebpackPlugin } = require( 'clean-webpack-plugin' )
+const { EnvironmentPlugin } = require( "webpack" )
+require( "dotenv" ).config( { path: `${ process.env.DOTENV_CONFIG_PATH || '.env' }` } )
 
+console.dir( { path: `${ process.env.DOTENV_CONFIG_PATH || '.env' }` } )
 // config helpers:
 const ensureArray = ( config ) => config && ( Array.isArray( config ) ? config : [ config ] ) || []
 const when = ( condition, config, negativeConfig ) =>
@@ -272,6 +275,7 @@ module.exports = ( { production } = {}, { extractCss, analyze, tests, hmr, port,
      * remove those before the webpack build. In that case consider disabling the plugin, and instead use something like
      * `del` (https://www.npmjs.com/package/del), or `rimraf` (https://www.npmjs.com/package/rimraf).
      */
-    new CleanWebpackPlugin()
+    new CleanWebpackPlugin(),
+    new EnvironmentPlugin( process.env )
   ]
 } )
