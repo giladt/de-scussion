@@ -195,6 +195,12 @@ module.exports = ( { production } = {}, { extractCss, analyze, tests, hmr, port,
     hot: hmr || project.platform.hmr,
     port: port || project.platform.port,
     host: host,
+    proxy: {
+      '/api': {
+        target: 'https://theconvo.space/api',
+        secure: false
+      }
+    }
   },
   devtool: production ? 'nosources-source-map' : 'cheap-module-eval-source-map',
   module: {

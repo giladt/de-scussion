@@ -20,7 +20,30 @@ export class App {
   public title = 'De-scussion';
   public messages: Array<IMessage> = [];
   private message: string;
-  private auth: { success: boolean, message: string };
+  private auth: { 
+    data: {
+      success: boolean, 
+      message: string 
+    },
+    status: number,
+    statusText: string,
+    headers: {
+      'content-type': string,
+      'cache-control': string,
+      'content-length': string,
+    },
+    config: {
+      url: string,
+      method: string,
+      data: string,
+      headers: {
+        'Content-Type': string,
+        Accept: string,
+      },
+    },
+  };
+  private threads: any;
+  public comments: any;
 
   public wallet: {
     address: string,
@@ -32,7 +55,7 @@ export class App {
 
   constructor(http: HttpClient) {
     this.http = http;
-    const baseUrl = `https://theconvo.space/api/auth?apikey=CONVO`
+    const baseUrl = `/api/auth?apikey=CONVO`
     http.configure(config => {
       config.withBaseUrl(baseUrl);
     });
@@ -75,56 +98,38 @@ export class App {
     }
 
     const isMetaMaskConnected = async () => {
-        const accounts = await this.provider.listAccounts();
-        return accounts.length > 0;
+      const accounts = await this.provider.listAccounts();
+      return accounts.length > 0;
     }
 
     isMetaMaskConnected().then(async (connected) => {
-        if (connected) {
-            // metamask is connected
-            console.log('metamask connected', (await this.provider.listAccounts())[0]);
-            this.wallet.address = (await this.provider.listAccounts())[0];
-        } else {
-            // metamask is not connected
-            console.log('metamask not connected');
-        }
+      if (connected) {
+        // metamask is connected
+        this.wallet.address = (await this.provider.listAccounts())[0];
+        console.log('metamask connected', this.wallet.address);
+
+        this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=CONVO`)).data;
+        console.log('messages:', this.messages);
+      } else {
+        // metamask is not connected
+        console.log('metamask not connected');
+      }
     });
   }
 
   async addMessage(): Promise<void> {
     if(!this.message) return;
 
-      // Sample signature generation code using ethers.js
-      const timestamp = Date.now();
-      const signer = await this.provider.getSigner();
-      const signerAddress = await signer.getAddress();
-      const data = `I allow this site to access my data on The Convo Space using the account ${signerAddress}. Timestamp:${timestamp}`;
-      if(!this.auth) {
-        try {
-          const signature = await this.provider.send(
-            'personal_sign',
-            [ ethers.utils.hexlify(ethers.utils.toUtf8Bytes(data)), signerAddress.toLowerCase() ]
-            );
-          console.log({ signature , signerAddress , timestamp});
+    const auth = await this.signThread();
 
-          this.auth = (await axios.post(`https://theconvo.space/api/auth?apikey=CONVO`, {
-            signerAddress,
-            signature,
-            timestamp,
-          }));
-          console.log('auth:',this.auth);
-          console.log('signature:', signature);
-          console.log('threads:', this.auth);
-        } catch (e) {
-          console.log('User denied signature:', e);
-        }
-      }
-
-      const payload = {
-      origin: this.wallet.address,
-      content: this.message.replace(/\n/g, '<br>'),
-    }
-    this.messages.push(payload);
+    const res = await axios.post(`https://theconvo.space/api/comments?apikey=CONVO`, {
+      'token': auth.message,
+      'signerAddress': this.wallet.address,
+      'comment': this.message,
+      'threadId': 'cl_descussion',
+      'url': encodeURIComponent('http://localhost:8080/'),
+    })
+    this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=CONVO`)).data;
     this.message = "";
   }
 
@@ -141,9 +146,52 @@ export class App {
       this.provider = await new ethers.providers.Web3Provider(ethereum, 'any');
       await this.provider.send("eth_requestAccounts", []);
       this.wallet.address = (await this.provider.listAccounts())[0];
+
+      this.comments = await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=CONVO`);
+
     } else {
       console.log('provider:',this.provider);
       this.wallet.address = (await this.provider.listAccounts())[0];
     }
+  }
+
+  async signThread():Promise<{success: boolean, message: string}> {
+    if(!localStorage.getItem('signature')) {
+      // Sample signature generation code using ethers.js
+      const timestamp = Date.now();
+      const signer = await this.provider.getSigner();
+      const signerAddress = await signer.getAddress();
+      const data = `I allow this site to access my data on The Convo Space using the account ${signerAddress}. Timestamp:${timestamp}`;
+
+      if(!this.auth) {
+        try {
+          const signature = await this.provider.send(
+            'personal_sign',
+            [ ethers.utils.hexlify(ethers.utils.toUtf8Bytes(data)), signerAddress.toLowerCase() ]
+            );
+          console.log({ signature , signerAddress , timestamp});
+
+          const auth = (await axios.post(
+            `https://theconvo.space/api/auth?apikey=CONVO`, 
+            {
+              signerAddress,
+              signature,
+              timestamp,
+            }
+          ));
+          console.log('auth:',this.auth);
+          if(auth.data.success){
+            console.log('auth:',this.auth);
+            console.log('signature:', signature);
+
+            localStorage.setItem('signature', JSON.stringify(auth.data));
+          }
+        } catch (e) {
+          console.log('User denied signature:', e);
+        }
+      }
+    }
+
+    return JSON.parse(localStorage.getItem('signature'));
   }
 }

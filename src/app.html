@@ -13,8 +13,8 @@
   <div class="messages">
     <ul>
       <li repeat.for="message of messages">
-        <p>${message.origin}</p>
-        <p class.bind="message.origin === wallet.address? 'me':'other'" innerhtml.bind="message.content"></p>
+        <p>${message.author}</p>
+        <p class.bind="message.author === wallet.address? 'me':'other'" innerhtml.bind="message.text"></p>
       </li>
     </ul>
   </div>

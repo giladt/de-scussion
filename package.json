@@ -7,13 +7,17 @@
     "url": "???"
   },
   "license": "MIT",
+  "proxy": "https://theconvo.space",
   "dependencies": {
     "@textile/hub": "^6.2.0",
     "aurelia-animator-css": "^1.0.4",
     "aurelia-bootstrapper": "^2.3.3",
     "aurelia-fetch-client": "^1.8.2",
     "axios": "^0.21.1",
-    "ethers": "^5.4.5"
+    "concurrently": "^6.2.1",
+    "cross-env": "^7.0.3",
+    "ethers": "^5.4.5",
+    "serve": "^12.0.0"
   },
   "devDependencies": {
     "@types/jest": "^26.0.23",
@@ -61,6 +65,8 @@
   "scripts": {
     "build": "webpack --env.production --extractCss",
     "start": "webpack-dev-server --extractCss",
+    "serve": "serve -s dist --listen=3330 --cors",
+    "serve-dev": "cross-env DOTENV_CONFIG_PATH=.env NETWORK=rinkeby webpack-dev-server --env.development --cors",
     "build:dev": "webpack --extractCss",
     "analyze": "webpack --env.production --analyze",
     "test": "au test"
