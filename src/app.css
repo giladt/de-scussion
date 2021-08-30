@@ -32,6 +32,7 @@ p {
   max-height: 55vh;
   border: 1px solid #ccc;
   border-radius: 5px;
+  overflow-y: auto;
 }
 
 .messages>ul {
