@@ -9,6 +9,8 @@
   "license": "MIT",
   "proxy": "https://theconvo.space",
   "dependencies": {
+    "@ceramicnetwork/http-client": "^1.2.0",
+    "@ceramicstudio/idx": "^0.12.1",
     "@textile/hub": "^6.2.0",
     "aurelia-animator-css": "^1.0.4",
     "aurelia-bootstrapper": "^2.3.3",

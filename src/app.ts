@@ -1,16 +1,21 @@
 import './app.css';
+import { autoinject } from "aurelia-framework";
 import { ethers } from 'ethers';
 import axios from 'axios';
-import { autoinject } from "aurelia-framework";
+
+import CeramicClient from '@ceramicnetwork/http-client';
+import { IDX, getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 
 interface IMessage {
   origin: string,
   content: string,
+  author: string,
+  profile: IProfile,
 }
 
 interface IProfile {
-  cid: string,
-  avatar: string,
+  address: string,
+  image: string,
   name: string,
 }
 
@@ -49,6 +54,8 @@ export class App {
 
   private inputRef: HTMLTextAreaElement;
   private provider: any;
+
+  private serverWeb3 = new ethers.providers.InfuraProvider(null, process.env.INFURA_ID)
 
   constructor() {
     this.message = "";
@@ -101,6 +108,39 @@ export class App {
         console.log('metamask connected', this.wallet.address);
 
         this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
+        if(this.messages.length) {
+          const ceramic = new CeramicClient(process.env.CERAMIC_API_URL);
+          const idx = new IDX({ ceramic })
+
+          for(const message of this.messages){
+            if(message.author) {
+
+              // // Get the IDX profile
+              // idx.get('basicProfile', message.author + '@eip155:1').then((profile) => {
+              //   // Currently IDX.get returns Promise<unknown>
+              //   // Follow changes on: https://developers.idx.xyz/reference/idx/#get
+              //   if(profile !== null) {
+              //     message.profile= {
+              //       address: message.author,
+              //       image: 'https://icon-library.com/images/vendetta-icon/vendetta-icon-14.jpg',
+              //       name: 'Anonymous',
+              //     }
+              //   }
+              // });
+
+              // Retrieve profile info from (legacy) 3Box
+              getLegacy3BoxProfileAsBasicProfile(message.author).then(profile => {
+                if(profile !== null) {
+                  message.profile= {
+                    address: message.author,
+                    image: profile.image.original.src.replace('ipfs://', 'https://ipfs.io/ipfs/'),
+                    name: profile.name,
+                  }
+                }
+              });
+            }
+          }
+        }
         console.log('messages:', this.messages);
       } else {
         // metamask is not connected

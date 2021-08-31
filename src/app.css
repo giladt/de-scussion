@@ -59,6 +59,31 @@ p {
   background-color: skyblue;
 }
 
+.messages>ul>li>p:first-child {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.messages>ul>li>p>.name {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+}
+
+.messages>ul>li>p>.address {
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  max-width: 150px;
+}
+
+.messages>ul>li img {
+  border-radius: 20px;
+  width: 40px;
+  background-color: skyblue;
+}
+
 .form {
   display: grid;
   grid-auto-flow: column;

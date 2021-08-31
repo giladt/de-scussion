@@ -13,7 +13,12 @@
   <div class="messages">
     <ul>
       <li repeat.for="message of messages">
-        <p>${message.author}</p>
+        <p>
+          <img if.to-view="message.profile" src="${ message.profile.image }" width="40" alt.bind="message.profile.name">
+          <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="message.author">
+          <span if.to-view="message.profile" class="name">${message.profile.name}&nbsp;</span>
+          <span if.to-view="message.author" class="address">${message.author}</spani>
+        </p>
         <p class.bind="message.author === wallet.address? 'me':'other'" innerhtml.bind="message.text"></p>
       </li>
     </ul>
