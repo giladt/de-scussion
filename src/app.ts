@@ -8,8 +8,7 @@ import CeramicClient from '@ceramicnetwork/http-client';
 import { IDX, getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
 
 interface IMessage {
-  origin: string,
-  content: string,
+  text: string,
   author: string,
   profile: IProfile,
 }
@@ -51,6 +50,8 @@ export class App {
   private auth: IAuth;
   public comments: any;
   public isConnected = false;
+  private ceramic: CeramicClient;
+  private idx: IDX;
 
   public wallet: {
     address: string,
@@ -79,6 +80,9 @@ export class App {
   // }
 
   public async attached():Promise<void> {
+    const ceramic = new CeramicClient(process.env.CERAMIC_API_URL);
+    this.idx = new IDX({ ceramic })
+
     this.inputRef.addEventListener('keydown', (e) => this.handleKeypress(e));
 
     // // Force page refreshes on network changes
@@ -129,13 +133,22 @@ export class App {
         'threadId': 'cl_descussion',
         'url': encodeURIComponent( process.env.APP_URL ),
       });
-      console.log(res);
+      if(res.status === 200) {
+        const profile = await this.loadProfile(this.wallet.address);
+        this.messages.push({
+          author: this.wallet.address,
+          text: this.message,
+          profile: {
+            address: profile.address,
+            image: profile.image,
+            name: profile.name,
+          } as IProfile,
+        } as IMessage);
+        this.message = "";
+      }
     } catch (error) {
       console.error(error.message);
     }
-
-    this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
-    this.message = "";
   }
 
   handleKeypress(event: KeyboardEvent): void {
@@ -154,7 +167,6 @@ export class App {
       this.wallet.address = (await this.provider.listAccounts())[0];
 
       this.isConnected = true;
-      // this.comments = await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`);
     } else {
       console.log('provider:',this.provider);
       this.wallet.address = (await this.provider.listAccounts())[0];
@@ -202,38 +214,40 @@ export class App {
     return JSON.parse(localStorage.getItem('signature'));
   }
 
+  async loadProfile(author): Promise<IProfile> {
+    // // Get the IDX profile
+    // return await idx.get('basicProfile', message.author + '@eip155:1').then((profile) => {
+    //   // Currently IDX.get returns Promise<unknown>
+    //   // Follow changes on: https://developers.idx.xyz/reference/idx/#get
+    //   if(profile !== null) {
+    //     return {
+    //       address: message.author,
+    //       image: 'https://icon-library.com/images/vendetta-icon/vendetta-icon-14.jpg',
+    //       name: 'Anonymous',
+    //     }
+    //   }
+    // });
+
+    // Retrieve profile info from (legacy) 3Box
+    return await getLegacy3BoxProfileAsBasicProfile(author).then(profile => {
+      if(profile !== null) {
+        return {
+          address: author,
+          image: profile.image.original.src.replace('ipfs://', 'https://ipfs.io/ipfs/'),
+          name: profile.name,
+        }
+      }
+    });
+  }
+
   async loadConversation():Promise<void> {
     this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
     if(this.messages.length) {
-      const ceramic = new CeramicClient(process.env.CERAMIC_API_URL);
-      const idx = new IDX({ ceramic })
 
       for(const message of this.messages){
         if(message.author) {
-
-          // // Get the IDX profile
-          // idx.get('basicProfile', message.author + '@eip155:1').then((profile) => {
-          //   // Currently IDX.get returns Promise<unknown>
-          //   // Follow changes on: https://developers.idx.xyz/reference/idx/#get
-          //   if(profile !== null) {
-          //     message.profile= {
-          //       address: message.author,
-          //       image: 'https://icon-library.com/images/vendetta-icon/vendetta-icon-14.jpg',
-          //       name: 'Anonymous',
-          //     }
-          //   }
-          // });
-
-          // Retrieve profile info from (legacy) 3Box
-          getLegacy3BoxProfileAsBasicProfile(message.author).then(profile => {
-            if(profile !== null) {
-              message.profile= {
-                address: message.author,
-                image: profile.image.original.src.replace('ipfs://', 'https://ipfs.io/ipfs/'),
-                name: profile.name,
-              }
-            }
-          });
+          const profile = await this.loadProfile(message.author);
+          message.profile = profile;
         }
       }
     }
