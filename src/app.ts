@@ -50,8 +50,8 @@ export class App {
   private auth: IAuth;
   public comments: any;
   public isConnected = false;
-  private ceramic: CeramicClient;
   private idx: IDX;
+  private chainId: string;
 
   public wallet: {
     address: string,
@@ -60,7 +60,7 @@ export class App {
   private inputRef: HTMLTextAreaElement;
   private provider: any;
 
-  private serverWeb3 = new ethers.providers.InfuraProvider(null, process.env.INFURA_ID)
+  // private serverWeb3 = new ethers.providers.InfuraProvider(null, process.env.INFURA_ID)
 
   constructor() {
     this.message = "";
@@ -101,7 +101,8 @@ export class App {
 
     const { ethereum } = (window as any);
     if (ethereum) {
-        this.provider = new ethers.providers.Web3Provider(ethereum);
+      this.provider = new ethers.providers.Web3Provider(ethereum);
+      this.chainId = await this.provider.getNetwork().then(network => network.chainId);
     }
 
     this.loadConversation();
@@ -130,7 +131,7 @@ export class App {
         'token': auth.message,
         'signerAddress': this.wallet.address,
         'comment': this.message,
-        'threadId': 'cl_descussion',
+        'threadId': `cl_descussion:${this.chainId}`,
         'url': encodeURIComponent( process.env.APP_URL ),
       });
       if(res.status === 200) {
@@ -241,7 +242,7 @@ export class App {
   }
 
   async loadConversation():Promise<void> {
-    this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
+    this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion:${this.chainId}&apikey=${ process.env.CONVO_API_KEY }`)).data;
     if(this.messages.length) {
 
       for(const message of this.messages){
