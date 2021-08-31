@@ -1,5 +1,6 @@
 import './app.css';
 import { autoinject } from "aurelia-framework";
+import { EventAggregator } from 'aurelia-event-aggregator';
 import { ethers } from 'ethers';
 import axios from 'axios';
 
@@ -19,34 +20,37 @@ interface IProfile {
   name: string,
 }
 
+interface IAuth { 
+  data: {
+    success: boolean, 
+    message: string 
+  },
+  status: number,
+  statusText: string,
+  headers: {
+    'content-type': string,
+    'cache-control': string,
+    'content-length': string,
+  },
+  config: {
+    url: string,
+    method: string,
+    data: string,
+    headers: {
+      'Content-Type': string,
+      Accept: string,
+    },
+  },
+}
+
 @autoinject
 export class App {
   public title = 'De-scussion';
   public messages: Array<IMessage> = [];
   private message: string;
-  private auth: { 
-    data: {
-      success: boolean, 
-      message: string 
-    },
-    status: number,
-    statusText: string,
-    headers: {
-      'content-type': string,
-      'cache-control': string,
-      'content-length': string,
-    },
-    config: {
-      url: string,
-      method: string,
-      data: string,
-      headers: {
-        'Content-Type': string,
-        Accept: string,
-      },
-    },
-  };
+  private auth: IAuth;
   public comments: any;
+  public isConnected = false;
 
   public wallet: {
     address: string,
@@ -64,15 +68,15 @@ export class App {
     }
   }
 
-  async isConnected():Promise<boolean> {
-    this.provider = (window as any).ethereum;
-    if(await this.provider.selectedAddress) {
-      console.log('constructor provider:',this.provider);
-      this.wallet.address = await this.provider.selectedAddress;
-      return true;
-    }
-    return false;
-  }
+  // async isConnected():Promise<boolean> {
+  //   this.provider = (window as any).ethereum;
+  //   if(await this.provider.selectedAddress) {
+  //     console.log('constructor provider:',this.provider);
+  //     this.wallet.address = await this.provider.selectedAddress;
+  //     return true;
+  //   }
+  //   return false;
+  // }
 
   public async attached():Promise<void> {
     this.inputRef.addEventListener('keydown', (e) => this.handleKeypress(e));
@@ -96,57 +100,20 @@ export class App {
         this.provider = new ethers.providers.Web3Provider(ethereum);
     }
 
-    const isMetaMaskConnected = async () => {
-      const accounts = await this.provider.listAccounts();
-      return accounts.length > 0;
+    this.loadConversation();
+
+    const accounts = await this.provider.listAccounts();
+    this.isConnected = accounts.length>0;
+
+    if (this.isConnected) {
+      // metamask is connected
+      this.wallet.address = (await this.provider.listAccounts())[0];
+      console.log('metamask connected to', this.wallet.address);
+    } else {
+      // metamask is not connected
+      console.log('metamask not connected');
     }
 
-    isMetaMaskConnected().then(async (connected) => {
-      if (connected) {
-        // metamask is connected
-        this.wallet.address = (await this.provider.listAccounts())[0];
-        console.log('metamask connected', this.wallet.address);
-
-        this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
-        if(this.messages.length) {
-          const ceramic = new CeramicClient(process.env.CERAMIC_API_URL);
-          const idx = new IDX({ ceramic })
-
-          for(const message of this.messages){
-            if(message.author) {
-
-              // // Get the IDX profile
-              // idx.get('basicProfile', message.author + '@eip155:1').then((profile) => {
-              //   // Currently IDX.get returns Promise<unknown>
-              //   // Follow changes on: https://developers.idx.xyz/reference/idx/#get
-              //   if(profile !== null) {
-              //     message.profile= {
-              //       address: message.author,
-              //       image: 'https://icon-library.com/images/vendetta-icon/vendetta-icon-14.jpg',
-              //       name: 'Anonymous',
-              //     }
-              //   }
-              // });
-
-              // Retrieve profile info from (legacy) 3Box
-              getLegacy3BoxProfileAsBasicProfile(message.author).then(profile => {
-                if(profile !== null) {
-                  message.profile= {
-                    address: message.author,
-                    image: profile.image.original.src.replace('ipfs://', 'https://ipfs.io/ipfs/'),
-                    name: profile.name,
-                  }
-                }
-              });
-            }
-          }
-        }
-        console.log('messages:', this.messages);
-      } else {
-        // metamask is not connected
-        console.log('metamask not connected');
-      }
-    });
   }
 
   async addMessage(): Promise<void> {
@@ -154,13 +121,19 @@ export class App {
 
     const auth = await this.signThread();
 
-    const res = await axios.post(`https://theconvo.space/api/comments?apikey=${ process.env.CONVO_API_KEY }`, {
-      'token': auth.message,
-      'signerAddress': this.wallet.address,
-      'comment': this.message,
-      'threadId': 'cl_descussion',
-      'url': encodeURIComponent( process.env.APP_URL ),
-    })
+    try {
+      const res = await axios.post(`https://theconvo.space/api/comments?apikey=${ process.env.CONVO_API_KEY }`, {
+        'token': auth.message,
+        'signerAddress': this.wallet.address,
+        'comment': this.message,
+        'threadId': 'cl_descussion',
+        'url': encodeURIComponent( process.env.APP_URL ),
+      });
+      console.log(res);
+    } catch (error) {
+      console.error(error.message);
+    }
+
     this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
     this.message = "";
   }
@@ -172,6 +145,7 @@ export class App {
     }
   }
 
+  // User pressed the "Connect to wallet" button
   async connect():Promise<void> {
     if(!this.provider.listAccounts().length) {
       const { ethereum } = (window as any);
@@ -179,12 +153,17 @@ export class App {
       await this.provider.send("eth_requestAccounts", []);
       this.wallet.address = (await this.provider.listAccounts())[0];
 
-      this.comments = await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`);
-
+      this.isConnected = true;
+      // this.comments = await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`);
     } else {
       console.log('provider:',this.provider);
       this.wallet.address = (await this.provider.listAccounts())[0];
     }
+  }
+
+  async isMetaMaskConnected():Promise<void> {
+    const accounts = await this.provider.listAccounts();
+    this.isConnected = accounts.length > 0;
   }
 
   async signThread():Promise<{success: boolean, message: string}> {
@@ -201,7 +180,6 @@ export class App {
             'personal_sign',
             [ ethers.utils.hexlify(ethers.utils.toUtf8Bytes(data)), signerAddress.toLowerCase() ]
             );
-          console.log({ signature , signerAddress , timestamp});
 
           const auth = (await axios.post(
             `https://theconvo.space/api/auth?apikey=${ process.env.CONVO_API_KEY }`, 
@@ -211,11 +189,8 @@ export class App {
               timestamp,
             }
           ));
-          console.log('auth:',this.auth);
-          if(auth.data.success){
-            console.log('auth:',this.auth);
-            console.log('signature:', signature);
 
+          if(auth.data.success){
             localStorage.setItem('signature', JSON.stringify(auth.data));
           }
         } catch (e) {
@@ -225,5 +200,42 @@ export class App {
     }
 
     return JSON.parse(localStorage.getItem('signature'));
+  }
+
+  async loadConversation():Promise<void> {
+    this.messages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion&apikey=${ process.env.CONVO_API_KEY }`)).data;
+    if(this.messages.length) {
+      const ceramic = new CeramicClient(process.env.CERAMIC_API_URL);
+      const idx = new IDX({ ceramic })
+
+      for(const message of this.messages){
+        if(message.author) {
+
+          // // Get the IDX profile
+          // idx.get('basicProfile', message.author + '@eip155:1').then((profile) => {
+          //   // Currently IDX.get returns Promise<unknown>
+          //   // Follow changes on: https://developers.idx.xyz/reference/idx/#get
+          //   if(profile !== null) {
+          //     message.profile= {
+          //       address: message.author,
+          //       image: 'https://icon-library.com/images/vendetta-icon/vendetta-icon-14.jpg',
+          //       name: 'Anonymous',
+          //     }
+          //   }
+          // });
+
+          // Retrieve profile info from (legacy) 3Box
+          getLegacy3BoxProfileAsBasicProfile(message.author).then(profile => {
+            if(profile !== null) {
+              message.profile= {
+                address: message.author,
+                image: profile.image.original.src.replace('ipfs://', 'https://ipfs.io/ipfs/'),
+                name: profile.name,
+              }
+            }
+          });
+        }
+      }
+    }
   }
 }

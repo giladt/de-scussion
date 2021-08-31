@@ -28,7 +28,8 @@
       ref="inputRef"
       rows="5" 
       value.bind="message"
-      placeholder="Type your comment here..."
+      disabled.bind="!isConnected"
+      placeholder.bind="isConnected?'Type your comment here...' : 'Connect to wallet in order to add your comment...'"
       class="text">
     </textarea>
     <button disabled.bind="!message.length" class="send" click.trigger="addMessage()">Send<br><small>(or press- 'Shift + Enter')</small></button>
