@@ -12,6 +12,8 @@
     "@ceramicnetwork/http-client": "^1.2.0",
     "@ceramicstudio/idx": "^0.12.1",
     "@textile/hub": "^6.2.0",
+    "@toruslabs/torus-embed": "^1.13.1",
+    "@walletconnect/web3-provider": "^1.6.5",
     "aurelia-animator-css": "^1.0.4",
     "aurelia-bootstrapper": "^2.3.3",
     "aurelia-fetch-client": "^1.8.2",
@@ -20,7 +22,8 @@
     "cross-env": "^7.0.3",
     "dotenv": "^10.0.0",
     "ethers": "^5.4.5",
-    "serve": "^12.0.0"
+    "serve": "^12.0.0",
+    "web3modal": "^1.9.4"
   },
   "devDependencies": {
     "@types/jest": "^26.0.23",

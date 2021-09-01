@@ -1,4 +1,4 @@
-<template>
+<template >
   <nav class="navbar">
     <h1>${title}</h1>
     <div if.bind="!wallet.address" class="wallet">
@@ -20,6 +20,13 @@
           <span if.to-view="message.author" class="address">${message.author}</spani>
         </p>
         <p class.bind="message.author === wallet.address? 'me':'other'" innerhtml.bind="message.text"></p>
+        <textarea 
+          if.to-view="message.showReply" 
+          name="reply-text"
+          value.bind = "message.replyText"
+          id="reply-text" cols="30" rows="10"></textarea>
+        <button if.to-view="message.showReply" click.trigger="addMessage(message._id, message.replyText)">Send</button>
+        <button click.delegate="toggleReply(message)">${!message.showReply?'Reply':'Close'}</button>
       </li>
     </ul>
   </div>
@@ -32,6 +39,6 @@
       placeholder.bind="isConnected?'Type your comment here...' : 'Connect to wallet in order to add your comment...'"
       class="text">
     </textarea>
-    <button disabled.bind="!message.length" class="send" click.trigger="addMessage()">Send<br><small>(or press- 'Shift + Enter')</small></button>
+    <button disabled.bind="!message.length" class="send" click.trigger="addMessage('', message)">Send<br><small>(or press- 'Shift + Enter')</small></button>
   </div>
 </template>
