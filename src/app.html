@@ -1,12 +1,12 @@
 <template >
   <nav class="navbar">
     <h1>${title}</h1>
-    <div if.bind="!wallet.address" class="wallet">
-      <button click.trigger="connect()">Connect to wallet</button>
+    <div if.bind="!auth.wallet.address" class="wallet">
+      <button click.trigger="auth.connect()">Connect to wallet</button>
     </div>
     <div else>
       <p>
-        ${wallet.address}
+        ${auth.wallet.address}
       </p>
     </div>
   </nav>
@@ -14,19 +14,19 @@
     <ul>
       <li repeat.for="message of messages">
         <p>
-          <img if.to-view="message.profile" src="${ message.profile.image }" width="40" alt.bind="message.profile.name">
+          <img if.to-view="message.metadata.image" src="${ message.metadata.image }" width="40" alt.bind="message.metadata.name">
           <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="message.author">
-          <span if.to-view="message.profile" class="name">${message.profile.name}&nbsp;</span>
+          <span if.to-view="message.metadata.name" class="name">${message.metadata.name}&nbsp;</span>
           <span if.to-view="message.author" class="address">${message.author}</spani>
         </p>
-        <p class.bind="message.author === wallet.address? 'me':'other'" innerhtml.bind="message.text"></p>
+        <p class.bind="message.author === auth.wallet.address? 'me':'other'" innerhtml.bind="message.text"></p>
         <textarea 
           if.to-view="message.showReply" 
           name="reply-text"
           value.bind = "message.replyText"
           id="reply-text" cols="30" rows="10"></textarea>
         <button if.to-view="message.showReply" click.trigger="addMessage(message._id, message.replyText)">Send</button>
-        <button click.delegate="toggleReply(message)">${!message.showReply?'Reply':'Close'}</button>
+        <button click.delegate="toggleReply(message._id)">${!message.showReply?'Reply':'Close'}</button>
       </li>
     </ul>
   </div>
@@ -35,8 +35,8 @@
       ref="inputRef"
       rows="5" 
       value.bind="message"
-      disabled.bind="!isConnected"
-      placeholder.bind="isConnected?'Type your comment here...' : 'Connect to wallet in order to add your comment...'"
+      disabled.bind="!auth.isConnected"
+      placeholder.bind="auth.isConnected?'Type your comment here...' : 'Connect to wallet in order to add your comment...'"
       class="text">
     </textarea>
     <button disabled.bind="!message.length" class="send" click.trigger="addMessage('', message)">Send<br><small>(or press- 'Shift + Enter')</small></button>
