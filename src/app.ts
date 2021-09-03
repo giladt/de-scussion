@@ -2,6 +2,7 @@ import './app.css';
 import { autoinject, bindable } from "aurelia-framework";
 import { EventAggregator } from 'aurelia-event-aggregator';
 import axios from 'axios';
+import { formatDistanceToNow } from 'date-fns'
 
 import { Auth } from './resources/auth';
 
@@ -13,7 +14,9 @@ interface IMessage {
   text: string,
   author: string,
   metadata: any,
-  showReply: boolean,
+  upvote: number,
+  downvote: number,
+  timestamp: number,
 }
 
 interface IProfile {
@@ -33,6 +36,9 @@ export class App {
   private messagesService: NodeJS.Timeout;
   private inputRef: HTMLTextAreaElement;
   private auth: Auth = new Auth();
+  private showReply = '';
+  private replyMessage: IMessage;
+  private isLoading = false;
   
   constructor() {
     this.message = "";
@@ -40,7 +46,7 @@ export class App {
 
   toggleReply(_id: string): void {
     const message = this.messages.filter(message => message._id === _id)[0]
-    message.showReply = !message.showReply;
+    this.showReply = this.showReply === '' ? _id : '';
   }
 
   public async attached():Promise<void> {
@@ -51,7 +57,7 @@ export class App {
     this.inputRef.addEventListener('keydown', (e) => this.handleKeypress(e));
 
     await this.auth.init();
-    this.loadConversation()
+    this.loadConversation();
     const messagesElem = window.document.querySelector('.messages')
     messagesElem.scrollTop = messagesElem.scrollHeight;
 
@@ -71,8 +77,9 @@ export class App {
     clearInterval(this.messagesService);
   }
 
-  async addMessage(commentID = '', message = ''): Promise<void> {
+  async addMessage(message = ''): Promise<void> {
     if(!message) return;
+    this.isLoading = true;
 
     const auth = await this.auth.signThread();
     const token = auth.message;
@@ -80,7 +87,10 @@ export class App {
     try {
       // Profile imported from ceramic IDX
       const profile = await this.loadProfile(this.auth.wallet.address);
-      const res = await axios.post(`https://theconvo.space/api/comments?${commentID? 'replyTo=' + commentID + '&':''}apikey=${ process.env.CONVO_API_KEY }`, {
+      const url = `https://theconvo.space/api/comments?${this.showReply ? `replyTo=${this.showReply}&` : ''}apikey=${ process.env.CONVO_API_KEY }`;
+      console.log(url);
+      
+      const res = await axios.post(url, {
         'token': token,
         'signerAddress': this.auth.wallet.address,
         'comment': message,
@@ -89,26 +99,35 @@ export class App {
         'url': encodeURIComponent( process.env.APP_URL ),
       });
 
-      if(res.status === 200) this.message = "";
+      if(res.status === 200) {
+        this.isLoading = false;
+        this.message = "";
+        this.showReply = '';
+      }
     } catch (error) {
+      this.isLoading = false;
       console.error(error.message);
     }
   }
 
-  async voteMessage(type: string): Promise<void> {
-    let token = "";
-    if(!(await this.auth.isValidAuth)) {
-      const auth = await this.auth.signThread();
-      token = auth.message;
-    } else {
-      token = JSON.parse(localStorage.getItem('signature')).message;
-    }
+  async voteMessage(_id: string, type: string): Promise<void> {
+    const auth = await this.auth.signThread();
+    const token = auth.message;
+
+    const res = await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
+      'signerAddress': this.auth.wallet.address,
+      'token': token,
+      'commentId': _id,
+      'type': type,
+    });
+
+    console.log(res);
   }
 
   handleKeypress(event: KeyboardEvent): void {
     if (event.shiftKey && event.key === 'Enter') {
       event.preventDefault();
-      this.addMessage('', this.message);
+      this.addMessage(this.message);
     }
   }
 
@@ -128,6 +147,7 @@ export class App {
 
     // Retrieve profile info from (legacy) 3Box
     return await getLegacy3BoxProfileAsBasicProfile(author).then(profile => {
+
       if(profile !== null) {
         return {
           address: author,
@@ -146,15 +166,17 @@ export class App {
 
   async loadConversation():Promise<void> {
     const newMessages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion:${this.auth.chainId}&apikey=${ process.env.CONVO_API_KEY }`)).data;
-    
+
     if(newMessages.length && newMessages.length !== this.messages.length) {
       newMessages.map(async message => {
         if(message && !message.metadata.address) message.metadata = await this.loadProfile(message.author);
+        console.log('created', typeof message.createdOn, new Date(parseInt(message.createdOn)));
+        message.created = formatDistanceToNow(new Date(parseInt(message.createdOn)), {addSuffix: true});
       });
       this.messages = newMessages;
+      console.log(this.messages);
       const messagesElem = await window.document.querySelector('.messages')
       messagesElem.scrollTop = messagesElem.scrollHeight;
     }
-
   }
 }

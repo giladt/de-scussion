@@ -43,10 +43,6 @@ p {
   list-style: none;
   padding: 0 10px;
 }
-.messages>ul>li>p:not(:first-child) {
-  margin-top: 5px;
-}
-
 .messages>ul .me {
   border-radius: 5px;
   padding: 10px;
@@ -59,26 +55,60 @@ p {
   background-color: skyblue;
 }
 
-.messages>ul>li>p:first-child {
-  display: flex;
-  align-items: center;
-  gap: 5px;
+.messages>ul>li {
+  border-radius: 6px;
+  padding: 3px;
+  border: 1px dashed transparent;
+}
+.messages>ul>li.active, .messages>ul>li:hover {
+  background-color: lightblue;
+  border-color: skyblue;
 }
 
-.messages>ul>li>p>.name {
+.messages>ul>li>.metadata-container {
+  display:grid;
+  grid-template-areas: "img name"
+                       "img time";
+  grid-template-columns: 45px auto;
+  grid-template-rows: 20px 20px;
+  width: fit-content;
+  column-gap: 5px;
+}
+
+/* .messages>ul>li>.metadata-container:not(:first-child) {
+  margin-top: 5px;
+}
+
+.messages>ul>li>.metadata-container:first-child {
+  align-items: center;
+  gap: 5px;
+} */
+
+.messages>ul>li>.metadata-container>.user-details {
+  grid-area: name;
+}
+
+.messages>ul>li>.metadata-container>.user-massage-created {
+  grid-area: time;
+}
+
+.messages>ul>li>.metadata-container>.user-details>.user-name {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 
-.messages>ul>li>p>.address {
+.messages>ul>li>.metadata-container>.user-details>.user-address {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
   max-width: 150px;
 }
 
-.messages>ul>li img {
+.messages>ul>li>.metadata-container>.user-image {
+  grid-area: img;
+}
+.messages>ul>li>.metadata-container>.user-image>img {
   border-radius: 20px;
   width: 40px;
   background-color: skyblue;
@@ -101,4 +131,9 @@ p {
   border: none;
   border-radius: inherit;
   padding: 5px;
+}
+
+.self {
+  color: blue;
+  font-weight: 700;;
 }
