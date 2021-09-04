@@ -1,6 +1,14 @@
+import { EthereumEvent } from './web3types';
 import { autoinject } from "aurelia-framework";
 import axios from 'axios';
-import { ethers } from 'ethers';
+import { ethers,  } from 'ethers';
+import { Ethereumish } from '../resources/web3types';
+
+declare global {
+  interface Window {
+    ethereum: Ethereumish;
+  }
+}
 
 interface IAuth { 
   data: {
@@ -37,18 +45,21 @@ export class Auth {
   public isConnected = false;
 
   public async init(): Promise<void> {
-    const { ethereum } = (window as any);
-    this.provider = new ethers.providers.Web3Provider(ethereum);
+    const { ethereum } = window;
+    this.chainId = 1; // Set default chainId to 1 for mainnet, in case there is no provider injected to the dom.
+    if (!ethereum) return;
+
+    this.provider = new ethers.providers.Web3Provider(ethereum, 'any');
     this.chainId = await this.provider.getNetwork().then(network => network.chainId);
     const accounts = await this.provider.listAccounts();
+
     this.isConnected = accounts.length > 0;
     if(accounts.length > 0) this.wallet = { address: accounts[0] };
 
     if (ethereum) {
       // Listen to network changes and reload the page
-      ethereum.on("networkChanged", (networkId) => {
+      ethereum.on("chainChanged", (networkId) => {
         window.location.reload();
-        console.log('network changed:', networkId);
       });
 
       // Listen to account changes and update the wallet
@@ -56,7 +67,6 @@ export class Auth {
         window.location.reload();
       })
     }
-
   }
 
   public async isValidAuth(): Promise<string> {

@@ -62,15 +62,6 @@ export class App {
     messagesElem.scrollTop = messagesElem.scrollHeight;
 
     this.messagesService = global.setInterval(()=>this.loadConversation(), 1000);
-
-    // if (this.auth.isConnected) {
-    //   // metamask is connected
-    //   this.auth.wallet.address = (await this.auth.provider.listAccounts())[0];
-    //   console.log('metamask connected to', this.auth.wallet.address);
-    // } else {
-    //   // metamask is not connected
-    //   console.log('metamask not connected');
-    // }
   }
 
   deactivate(): void {
@@ -88,7 +79,6 @@ export class App {
       // Profile imported from ceramic IDX
       const profile = await this.loadProfile(this.auth.wallet.address);
       const url = `https://theconvo.space/api/comments?apikey=${ process.env.CONVO_API_KEY }`;
-      console.log(url);
       
       const res = await axios.post(url, {
         'token': token,
@@ -121,8 +111,6 @@ export class App {
       'commentId': _id,
       'type': type,
     });
-
-    console.log(res);
   }
 
   handleKeypress(event: KeyboardEvent): void {
@@ -211,7 +199,6 @@ export class App {
           message.replyToOrigin = newMessages.filter(origin => {
             return origin._id === message.replyTo;
           })[0];
-          console.log(message.replyTo, message.replyToOrigin);
         }
       });
       this.messages = newMessages;

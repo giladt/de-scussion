@@ -2,14 +2,16 @@
   <div class="container">
     <nav class="navbar">
       <h1>${title}</h1>
-      <div if.bind="!auth.wallet.address" class="wallet">
-        <button click.trigger="auth.connect()">Connect to wallet</button>
-      </div>
-      <div else>
-        <p>
-          ${auth.wallet.address}
-        </p>
-      </div>
+      <template if.to-view="auth.provider">
+        <div if.bind="!auth.wallet.address" class="wallet">
+          <button click.trigger="auth.connect()">Connect to wallet</button>
+        </div>
+        <div else>
+          <p>
+            ${auth.wallet.address}
+          </p>
+        </div>
+      </template>
     </nav>
     <hr/>
     <div class="messages">
