@@ -87,7 +87,7 @@ export class App {
     try {
       // Profile imported from ceramic IDX
       const profile = await this.loadProfile(this.auth.wallet.address);
-      const url = `https://theconvo.space/api/comments?${this.showReply ? `replyTo=${this.showReply}&` : ''}apikey=${ process.env.CONVO_API_KEY }`;
+      const url = `https://theconvo.space/api/comments?apikey=${ process.env.CONVO_API_KEY }`;
       console.log(url);
       
       const res = await axios.post(url, {
@@ -95,6 +95,7 @@ export class App {
         'signerAddress': this.auth.wallet.address,
         'comment': message,
         'metadata': profile,
+        'replyTo' : this.showReply,
         'threadId': `cl_descussion:${this.auth.chainId}`,
         'url': encodeURIComponent( process.env.APP_URL ),
       });
@@ -170,13 +171,27 @@ export class App {
     if(newMessages.length && newMessages.length !== this.messages.length) {
       newMessages.map(async message => {
         if(message && !message.metadata.address) message.metadata = await this.loadProfile(message.author);
-        console.log('created', typeof message.createdOn, new Date(parseInt(message.createdOn)));
         message.created = formatDistanceToNow(new Date(parseInt(message.createdOn)), {addSuffix: true});
+        if(message.replyTo) {
+          message.replyToOrigin = newMessages.filter(origin => {
+            return origin._id === message.replyTo;
+          })[0];
+          console.log(message.replyTo, message.replyToOrigin);
+        }
       });
       this.messages = newMessages;
-      console.log(this.messages);
       const messagesElem = await window.document.querySelector('.messages')
       messagesElem.scrollTop = messagesElem.scrollHeight;
     }
   }
+
+  jump(id: string): void {
+    const el = document.getElementById(id);
+    el.scrollIntoView({behavior: 'smooth'});
+    el.classList.add('animate')
+    setTimeout((): void => {
+      el.classList.remove('animate')
+    }, 2500);
+  }
+
 }

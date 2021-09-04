@@ -24,6 +24,7 @@
           </span>
           <span if.to-view="message.createdOn" class="user-message-created">${message.created}</span>
         </p>
+        <small if.to-view="message.replyToOrigin">A <a href="" click.delegate="jump(message.replyTo)">reply</a> to ${message.replyToOrigin.metadata.name || message.replyToOrigin.author}: ${message.replyToOrigin.text}</small>
         <p class.bind="message.author === auth.wallet.address? 'me':'other'" innerhtml.bind="message.text"></p>
         <button if.to-view="showReply !== message._id" click.delegate="toggleReply(message._id)">Reply</button>
 
@@ -32,7 +33,7 @@
         >
           &nbsp;${message.upvotes.length}&nbsp;
         </span>
-        <button 
+        <button class="button vote"
           click.trigger="voteMessage(message._id, 'toggleUpvote')">
           👍
         </button>
@@ -41,7 +42,7 @@
         >
           &nbsp;${message.downvotes.length}&nbsp;
         </span>
-        <button 
+        <button class="button vote"
           click.trigger="voteMessage(message._id, 'toggleDownvote')"
         >
           👎
