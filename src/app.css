@@ -67,17 +67,17 @@ p {
 }
 
 @keyframes highlight {
-  0% {background-color: #fff;}
+  0% {background-color: none;}
   10% {background-color: rgba(166, 123, 198, 0.728);}
-  20% {background-color: #fff;}
+  20% {background-color: rgba(0,0,0,0);}
   30% {background-color: rgba(166, 123, 198, 0.728);}
-  40% {background-color: #fff;}
+  40% {background-color: rgba(0,0,0,0);}
   50% {background-color: rgba(166, 123, 198, 0.728);}
-  60% {background-color: #fff;}
+  60% {background-color: rgba(0,0,0,0);}
   70% {background-color: rgba(166, 123, 198, 0.728);}
-  80% {background-color: #fff;}
+  80% {background-color: rgba(0,0,0,0);}
   90% {background-color: rgba(166, 123, 198, 0.728);}
-  100% {background-color: #fff;}
+  100% {background-color: rgba(0,0,0,0);}
 }
 
 .button.vote {
