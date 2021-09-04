@@ -1,72 +1,101 @@
 <template >
-  <nav class="navbar">
-    <h1>${title}</h1>
-    <div if.bind="!auth.wallet.address" class="wallet">
-      <button click.trigger="auth.connect()">Connect to wallet</button>
-    </div>
-    <div else>
-      <p>
-        ${auth.wallet.address}
-      </p>
-    </div>
-  </nav>
-  <div class="messages">
-    <ul>
-      <li repeat.for="message of messages" id="${message._id}" class.bind="showReply === message._id?'active':''">
-        <p class="metadata-container">
-          <span class="user-image">
-            <img if.to-view="message.metadata.image" src="${ message.metadata.image }" width="40" alt.bind="message.metadata.name">
-            <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="message.author">
-          </span>
-          <span class="user-details">
-            <span if.to-view="message.metadata.name" class="user-name">${message.metadata.name}&nbsp;</span>
-            <span if.to-view="message.author" class="user-address">${message.author}</span>
-          </span>
-          <span if.to-view="message.createdOn" class="user-message-created">${message.created}</span>
+  <div class="container">
+    <nav class="navbar">
+      <h1>${title}</h1>
+      <div if.bind="!auth.wallet.address" class="wallet">
+        <button click.trigger="auth.connect()">Connect to wallet</button>
+      </div>
+      <div else>
+        <p>
+          ${auth.wallet.address}
         </p>
-        <small if.to-view="message.replyToOrigin">A <a href="" click.delegate="jump(message.replyTo)">reply</a> to ${message.replyToOrigin.metadata.name || message.replyToOrigin.author}: ${message.replyToOrigin.text}</small>
-        <p class.bind="message.author === auth.wallet.address? 'me':'other'" innerhtml.bind="message.text"></p>
-        <button if.to-view="showReply !== message._id" click.delegate="toggleReply(message._id)">Reply</button>
-
-        <span
-          class="${message.upvotes.includes(auth.wallet.address)? 'self':''}" 
+      </div>
+    </nav>
+    <hr/>
+    <div class="messages">
+      <ul>
+        <li repeat.for="message of messages" id="${message._id}" class.bind="showReply === message._id?'active':''">
+          <div class="metadata-container">
+            <span class="user-image">
+              <img if.to-view="message.metadata.image" src="${ message.metadata.image }" width="40" alt.bind="message.metadata.name">
+              <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="message.author">
+            </span>
+            <span class="user-details">
+              <span class="user-name">${message.metadata.name || '[Name Not Provided]'} (Representative)</span>
+            </span>
+            <span if.to-view="message.author" class="user-address">${message.author}</span>
+            <span if.to-view="message.createdOn" class="user-message-created">${message.created}</span>
+          </div>
+          <div class="message-body">
+            <div if.to-view="message.replyToOrigin"
+              click.delegate="jump(message.replyTo)" 
+              class="message-is-reply">
+              <div class="metadata-container">
+                <span class="user-image">
+                  <img if.to-view="message.replyToOrigin.metadata.image" src="${ message.replyToOrigin.metadata.image }" width="40" alt.bind="message.replyToOrigin.metadata.name">
+                  <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="message.replyToOrigin.author">
+                </span>
+                <span class="user-details">
+                  <div class="user-name">${message.replyToOrigin.metadata.name || '[Name Not Provided]'} (Representative)</div>
+                </span>
+                <span if.to-view="message.author" class="user-address">${message.replyToOrigin.author}</span>
+              </div>
+              <div class="reply-text">${message.replyToOrigin.text}</div>
+            </div>
+            <p class="message-content" innerhtml.bind="message.text"></p>
+          </div>
+          <p class="message-footer">
+            <button class="button vote"
+              click.trigger="voteMessage(message._id, 'toggleDownvote')">
+              👎
+            </button>
+            <span
+              class="${message.downvotes.includes(auth.wallet.address)? 'self':''}">
+              &nbsp;${message.downvotes.length}&nbsp;
+            </span>
+            <button class="button vote"
+              click.trigger="voteMessage(message._id, 'toggleUpvote')">
+              👍
+            </button>
+            <span
+              class="${message.upvotes.includes(auth.wallet.address)? 'self':''}">
+              &nbsp;${message.upvotes.length}&nbsp;
+            </span>
+            <a 
+              href="#"
+              click.delegate="toggleReply(message._id)">
+              Reply ↩︎
+            </a>
+          </p>
+        </li>
+      </ul>
+    </div>
+    <div class="sticky">
+      <hr>
+      <h2>Reply</h2>
+      <button if.to-view="showReply" click.delegate="toggleReply(message._id)">Close</button>
+      <div class="form">
+        <textarea 
+          ref="inputRef"
+          rows="5"
+          value.bind="message"
+          disabled.bind="!auth.isConnected"
+          placeholder.bind="auth.isConnected?'Type your comment here...' : 'Connect to wallet in order to add your comment...'"
+          class="text">
+        </textarea>
+        <button 
+          disabled.bind="!message.length" 
+          class="send" 
+          click.trigger="addMessage(message)"
         >
-          &nbsp;${message.upvotes.length}&nbsp;
-        </span>
-        <button class="button vote"
-          click.trigger="voteMessage(message._id, 'toggleUpvote')">
-          👍
+          Send<br><small>(or press- 'Shift + Enter')</small>
         </button>
-        <span
-          class="${message.downvotes.includes(auth.wallet.address)? 'self':''}" 
-        >
-          &nbsp;${message.downvotes.length}&nbsp;
-        </span>
-        <button class="button vote"
-          click.trigger="voteMessage(message._id, 'toggleDownvote')"
-        >
-          👎
-        </button>
-      </li>
-    </ul>
+      </div>
+    </div>
+    <footer>
+      <p>
+        powered by <a href="theconvo.space">TheConvo.space</a>
+      </p>
+    </footer>
   </div>
-  <button if.to-view="showReply" click.delegate="toggleReply(message._id)">Close</button>
-  <div class="form">
-    <textarea 
-      ref="inputRef"
-      rows="5"
-      value.bind="message"
-      disabled.bind="!auth.isConnected"
-      placeholder.bind="auth.isConnected?'Type your comment here...' : 'Connect to wallet in order to add your comment...'"
-      class="text">
-    </textarea>
-    <button 
-      disabled.bind="!message.length" 
-      class="send" 
-      click.trigger="addMessage(message)"
-    >
-      Send<br><small>(or press- 'Shift + Enter')</small>
-    </button>
-  </div>
-  ${showReply} 
 </template>

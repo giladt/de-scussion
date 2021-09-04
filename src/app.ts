@@ -2,7 +2,7 @@ import './app.css';
 import { autoinject, bindable } from "aurelia-framework";
 import { EventAggregator } from 'aurelia-event-aggregator';
 import axios from 'axios';
-import { formatDistanceToNow } from 'date-fns'
+import { format, formatDistanceToNowStrict } from 'date-fns'
 
 import { Auth } from './resources/auth';
 
@@ -168,10 +168,45 @@ export class App {
   async loadConversation():Promise<void> {
     const newMessages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion:${this.auth.chainId}&apikey=${ process.env.CONVO_API_KEY }`)).data;
 
+    const formatDistanceLocale = {
+      lessThanXSeconds: '{{count}}s',
+      xSeconds: '{{count}}s',
+      halfAMinute: '30s',
+      lessThanXMinutes: '{{count}}m',
+      xMinutes: '{{count}}m',
+      aboutXHours: '{{count}}h',
+      xHours: '{{count}}h',
+      xDays: '{{count}}d',
+      aboutXWeeks: '{{count}}w',
+      xWeeks: '{{count}}w',
+      aboutXMonths: '{{count}}m',
+      xMonths: '{{count}}m',
+      aboutXYears: '{{count}}y',
+      xYears: '{{count}}y',
+      overXYears: '{{count}}y',
+      almostXYears: '{{count}}y',
+    }
+
+    function formatDistance(token, count, options) {
+      options = options || {}
+
+      const result = formatDistanceLocale[token].replace('{{count}}', count)
+
+      if (options.addSuffix) {
+        if (options.comparison > 0) {
+          return 'in ' + result
+        } else {
+          return result + ' ago'
+        }
+      }
+
+      return result
+    }
+
     if(newMessages.length && newMessages.length !== this.messages.length) {
       newMessages.map(async message => {
         if(message && !message.metadata.address) message.metadata = await this.loadProfile(message.author);
-        message.created = formatDistanceToNow(new Date(parseInt(message.createdOn)), {addSuffix: true});
+        message.created = formatDistanceToNowStrict(new Date(parseInt(message.createdOn)), {addSuffix: false, locale: { formatDistance}});
         if(message.replyTo) {
           message.replyToOrigin = newMessages.filter(origin => {
             return origin._id === message.replyTo;
