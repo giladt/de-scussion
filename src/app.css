@@ -7,8 +7,9 @@ body {
 }
 
 .container {
-  width: clamp(300px, 100%, 1084px);
+  width: clamp(300px, calc(100% - 40px), 1084px);
   margin: 0 auto;
+  padding: 0 20px;
 }
 
 p {margin: 0; padding: 0;}
