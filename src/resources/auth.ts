@@ -131,7 +131,7 @@ export class Auth {
 
   // User pressed the "Connect to wallet" button
   public async connect():Promise<void> {
-    const { ethereum } = (window as any);
+    const { ethereum } = window;
     this.provider = await new ethers.providers.Web3Provider(ethereum, 'any');
     const accounts = await this.provider.listAccounts();
 
