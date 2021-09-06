@@ -46,7 +46,7 @@
             </div>
             <p class="message-content" innerhtml.bind="message.text"></p>
           </div>
-          <p class="message-footer">
+          <p if.to-view="auth.isConnected" class="message-footer">
             <button class="button vote"
               click.trigger="voteMessage(message._id, 'toggleDownvote')">
               👎

@@ -102,12 +102,12 @@ export class App {
   }
 
   async voteMessage(_id: string, type: string): Promise<void> {
+    if(!this.auth.wallet) return;
     const auth = await this.auth.signThread();
+    if(!auth.success) return;
+
     const token = auth.message;
-
     try {
-      console.log({address: this.auth.wallet.address, auth: this.auth});
-
       const res = await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
         'signerAddress': this.auth.wallet.address,
         'token': token,
