@@ -105,12 +105,18 @@ export class App {
     const auth = await this.auth.signThread();
     const token = auth.message;
 
-    const res = await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
-      'signerAddress': this.auth.wallet.address,
-      'token': token,
-      'commentId': _id,
-      'type': type,
-    });
+    try {
+      console.log({address: this.auth.wallet.address, auth: this.auth});
+
+      const res = await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
+        'signerAddress': this.auth.wallet.address,
+        'token': token,
+        'commentId': _id,
+        'type': type,
+      });
+    } catch (error) {
+      console.error(error.message);
+    }
   }
 
   handleKeypress(event: KeyboardEvent): void {
