@@ -94,6 +94,10 @@ export class App {
         this.isLoading = false;
         this.message = "";
         this.showReply = '';
+
+        await this.loadConversation();
+        const messagesElem = await window.document.querySelector('.container');
+        window.scrollTo(0,messagesElem.scrollHeight);
       }
     } catch (error) {
       this.isLoading = false;
@@ -102,18 +106,34 @@ export class App {
   }
 
   async voteMessage(_id: string, type: string): Promise<void> {
+    this.isLoading = true;
     if(!this.auth.wallet) return;
     const auth = await this.auth.signThread();
     if(!auth.success) return;
 
     const token = auth.message;
     try {
-      const res = await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
+      const message = await (await axios.get(`https://theconvo.space/api/comment?commentId=${_id}&apikey=${ process.env.CONVO_API_KEY }`)).data;
+      const types = ['toggleUpvote','toggleDownvote'];
+      const endpoints = {toggleUpvote: 'upvotes',toggleDownvote: 'downvotes'};
+      const typeInverse = types[types.length - types.indexOf(type) - 1];
+      
+      if(message[endpoints[typeInverse]].includes(this.auth.wallet.address)) {
+        await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
+          'signerAddress': this.auth.wallet.address,
+          'token': token,
+          'commentId': _id,
+          'type': typeInverse,
+        });
+      }
+
+      await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
         'signerAddress': this.auth.wallet.address,
         'token': token,
         'commentId': _id,
         'type': type,
       });
+      this.isLoading = false;
     } catch (error) {
       console.error(error.message);
     }
@@ -177,9 +197,6 @@ export class App {
         if(message && !message.metadata.address) message.metadata = await this.loadProfile(message.author);
       });
       this.messages = JSON.parse(JSON.stringify(newMessages));
-
-      const messagesElem = await window.document.querySelector('.container');
-      window.scrollTo(0,messagesElem.scrollHeight);
     }
   }
 

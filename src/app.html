@@ -1,5 +1,5 @@
-<template >
-  <div class="container">
+<template>
+  <div class="container ${isLoading?'loading':''}">
     <nav class="navbar">
       <h1>${title}</h1>
       <template if.to-view="auth.provider">
@@ -46,29 +46,37 @@
             </div>
             <p class="message-content" innerhtml.bind="message.text"></p>
           </div>
-          <p if.to-view="auth.isConnected" class="message-footer">
-            <button class="button vote"
-              click.trigger="voteMessage(message._id, 'toggleDownvote')">
-              👎
-            </button>
-            <span
-              class="${message.downvotes.includes(auth.wallet.address)? 'self':''}">
-              &nbsp;${message.downvotes.length}&nbsp;
-            </span>
-            <button class="button vote"
-              click.trigger="voteMessage(message._id, 'toggleUpvote')">
+          <div class="message-footer">
+            <div class="info">
               👍
-            </button>
-            <span
-              class="${message.upvotes.includes(auth.wallet.address)? 'self':''}">
-              &nbsp;${message.upvotes.length}&nbsp;
-            </span>
-            <a 
-              href="#"
-              click.delegate="toggleReply(message._id)">
-              Reply ↩︎
-            </a>
-          </p>
+              <span>
+                &nbsp;${message.upvotes.length - message.downvotes.length}&nbsp;
+              </span>
+            </div>
+            <div if.to-view="auth.isConnected" class="ctx">
+              <button class="button vote"
+                click.trigger="voteMessage(message._id, 'toggleDownvote')">
+                👎
+              </button>
+              <span
+                class="${message.downvotes.includes(auth.wallet.address)? 'self':''}">
+                &nbsp;${message.downvotes.length}&nbsp;
+              </span>
+              <button class="button vote"
+                click.trigger="voteMessage(message._id, 'toggleUpvote')">
+                👍
+              </button>
+              <span
+                class="${message.upvotes.includes(auth.wallet.address)? 'self':''}">
+                &nbsp;${message.upvotes.length}&nbsp;
+              </span>
+              <a 
+                href="#"
+                click.delegate="toggleReply(message._id)">
+                Reply ↩︎
+              </a>
+            </div>
+          </div>
         </li>
       </ul>
     </div>

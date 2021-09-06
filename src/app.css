@@ -83,9 +83,6 @@ hr {
   border-bottom: 1px solid #403453;
   opacity: 1;
 }
-.messages>ul>li:hover>.message-footer {
-  visibility: visible;
-}
 .messages>ul>li>.metadata-container, 
 .message-is-reply>.metadata-container {
   display:grid;
@@ -238,7 +235,18 @@ hr {
 
   margin-top: 0;
   margin-bottom: 0;
-  visibility: hidden;
+}
+.messages>ul>li>.message-footer>.ctx {
+  display: none;
+}
+.messages>ul>li:hover>.message-footer>.ctx {
+  display: inherit;
+}
+.messages>ul>li>.message-footer>.info {
+  display: inherit;
+}
+.messages>ul>li:hover>.message-footer>.info {
+  display: none;
 }
 
 .form {
@@ -294,4 +302,8 @@ hr {
   80% {background-color: rgba(0,0,0,0);}
   90% {background-color: rgba(166, 123, 198, 0.728);}
   100% {background-color: rgba(0,0,0,0);}
+}
+
+.loading * {
+  cursor: wait !important;
 }
