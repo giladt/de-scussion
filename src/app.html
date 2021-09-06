@@ -26,23 +26,23 @@
               <span class="user-name">${message.metadata.name || '[Name Not Provided]'} (Representative)</span>
             </span>
             <span if.to-view="message.author" class="user-address">${message.author}</span>
-            <span if.to-view="message.createdOn" class="user-message-created">${message.created}</span>
+            <span if.to-view="message.createdOn" class="user-message-created">${getTimeDistance(message.createdOn)}</span>
           </div>
           <div class="message-body">
-            <div if.to-view="message.replyToOrigin"
+            <div if.to-view="getReplyOrigin(message)"
               click.delegate="jump(message.replyTo)" 
               class="message-is-reply">
               <div class="metadata-container">
                 <span class="user-image">
-                  <img if.to-view="message.replyToOrigin.metadata.image" src="${ message.replyToOrigin.metadata.image }" width="40" alt.bind="message.replyToOrigin.metadata.name">
-                  <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="message.replyToOrigin.author">
+                  <img if.to-view="getReplyOrigin(message).metadata.image" src="${ getReplyOrigin(message).metadata.image }" width="40" alt.bind="getReplyOrigin(message).metadata.name">
+                  <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="getReplyOrigin(message).author">
                 </span>
                 <span class="user-details">
-                  <div class="user-name">${message.replyToOrigin.metadata.name || '[Name Not Provided]'} (Representative)</div>
+                  <div class="user-name">${getReplyOrigin(message).metadata.name || '[Name Not Provided]'} (Representative)</div>
                 </span>
-                <span if.to-view="message.author" class="user-address">${message.replyToOrigin.author}</span>
+                <span if.to-view="message.author" class="user-address">${getReplyOrigin(message).author}</span>
               </div>
-              <div class="reply-text">${message.replyToOrigin.text}</div>
+              <div class="reply-text">${getReplyOrigin(message).text}</div>
             </div>
             <p class="message-content" innerhtml.bind="message.text"></p>
           </div>
