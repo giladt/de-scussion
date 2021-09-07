@@ -86,16 +86,18 @@ hr {
 }
 .messages>ul>li>.metadata-container, 
 .message-is-reply>.metadata-container {
-  display:grid;
-  grid-template-areas: "img name time"
-                       "img wallet .";
+  display: grid;
+  grid-template-areas: "img details time";
   grid-template-columns: 40px auto auto;
-  grid-template-rows: 20px 20px;
+  grid-template-rows: 40px;
   column-gap: 6px;
   padding-top: 15px;
 }
 .metadata-container>.user-details {
-  grid-area: name;
+  grid-area: details;
+  display: grid;
+  grid-template-rows: repeat(auto-fill, 20px);
+  align-self: center;
 }
 .metadata-container>.user-message-created {
   grid-area: time;
@@ -114,6 +116,7 @@ hr {
   color: #98979B;
 }
 .metadata-container>.user-details>.user-name {
+
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -126,9 +129,7 @@ hr {
   letter-spacing: 0px;
   text-align: left;
 }
-.metadata-container>.user-address {
-  grid-area: wallet;
-
+.metadata-container>.user-details>.user-address {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
@@ -178,13 +179,16 @@ hr {
 .messages>ul>li>.message-body>.message-is-reply>.metadata-container {
   padding-top: 0;
   grid-template-columns: 25px auto auto;
-  grid-template-rows: 14px 11px;
+  grid-template-rows: 25px;
+}
+.messages>ul>li>.message-body>.message-is-reply>.metadata-container>.user-details {
+  grid-template-rows: repeat(auto-fill, 12.5px);
 }
 .messages>ul>li>.message-body>.message-is-reply>.metadata-container>.user-details>.user-name {
   font-size: 10px;
   line-height: 12px;
 }
-.messages>ul>li>.message-body>.message-is-reply>.metadata-container>.user-address {
+.messages>ul>li>.message-body>.message-is-reply>.metadata-container>.user-details>.user-address {
   font-size: 8px;
   line-height: 10px;
 }

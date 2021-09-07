@@ -14,6 +14,7 @@
     "@textile/hub": "^6.2.0",
     "@toruslabs/torus-embed": "^1.13.1",
     "@walletconnect/web3-provider": "^1.6.5",
+    "ably": "^1.2.13",
     "aurelia-animator-css": "^1.0.4",
     "aurelia-bootstrapper": "^2.3.3",
     "aurelia-fetch-client": "^1.8.2",
@@ -25,6 +26,7 @@
     "ethers": "^5.4.5",
     "hardhat": "^2.6.2",
     "serve": "^12.0.0",
+    "socket.io": "^4.2.0",
     "web3modal": "^1.9.4"
   },
   "devDependencies": {

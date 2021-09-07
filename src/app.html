@@ -18,14 +18,14 @@
       <ul>
         <li repeat.for="message of messages" id="${message._id}" class.bind="showReply === message._id?'active':''">
           <div class="metadata-container">
-            <span class="user-image">
+            <div class="user-image">
               <img if.to-view="message.metadata.image" src="${ message.metadata.image }" width="40" alt.bind="message.metadata.name">
               <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="message.author">
-            </span>
-            <span class="user-details">
-              <span class="user-name">${message.metadata.name || '[Name Not Provided]'} (Representative)</span>
-            </span>
-            <span if.to-view="message.author" class="user-address">${message.author}</span>
+            </div>
+            <div class="user-details">
+              <div class="user-name">${message.metadata.name || message.author} (Representative)</div>
+              <div class="user-address" if.to-view="message.author && message.metadata.name">${message.author}</div>
+            </div>
             <span if.to-view="message.createdOn" class="user-message-created">${getTimeDistance(message.createdOn)}</span>
           </div>
           <div class="message-body">
@@ -33,14 +33,14 @@
               click.delegate="jump(message.replyTo)" 
               class="message-is-reply">
               <div class="metadata-container">
-                <span class="user-image">
+                <div class="user-image">
                   <img if.to-view="getReplyOrigin(message).metadata.image" src="${ getReplyOrigin(message).metadata.image }" width="40" alt.bind="getReplyOrigin(message).metadata.name">
                   <img else src="https://upload.wikimedia.org/wikipedia/commons/7/7c/Profile_avatar_placeholder_large.png" width="40" alt.bind="getReplyOrigin(message).author">
-                </span>
-                <span class="user-details">
+                </div>
+                <div class="user-details">
                   <div class="user-name">${getReplyOrigin(message).metadata.name || '[Name Not Provided]'} (Representative)</div>
-                </span>
-                <span if.to-view="message.author" class="user-address">${getReplyOrigin(message).author}</span>
+                  <div if.to-view="message.author" class="user-address">${getReplyOrigin(message).author}</div>
+                </div>
               </div>
               <div class="reply-text">${getReplyOrigin(message).text}</div>
             </div>

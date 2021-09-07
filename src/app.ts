@@ -7,6 +7,7 @@ import { Auth } from './resources/auth';
 
 import CeramicClient from '@ceramicnetwork/http-client';
 import { IDX, getLegacy3BoxProfileAsBasicProfile } from '@ceramicstudio/idx';
+import { Realtime } from "ably/promises";
 
 interface IMessage {
   _id: string,
@@ -30,42 +31,58 @@ export class App {
   private title = 'De-scussion';
   private messages: Array<IMessage> = [];
   private message: string;
-  private comments: any;
   private idx: IDX;
-  private chainId: string|number;
-  private messagesService: NodeJS.Timeout;
   private inputRef: HTMLTextAreaElement;
   private auth: Auth = new Auth();
   private showReply = '';
-  private replyMessage: IMessage;
-  private isLoading = false;
+  private channelName: string;
+  private channel: any;
   
+  @bindable isLoading = false;
+  async init(): Promise<void> {
+    await this.auth.init();
+    this.channelName = `cl_descussion:${await this.auth.chainId}`;
+
+    const ably = new Realtime.Promise({ authUrl: `https://theconvo.space/api/getAblyAuth?apikey=${ process.env.CONVO_API_KEY }` });
+    this.channel = await ably.channels.get(this.channelName);
+  }
+
   constructor() {
     this.message = "";
   }
-
+  
   toggleReply(_id: string): void {
     const message = this.messages.filter(message => message._id === _id)[0]
     this.showReply = this.showReply === '' ? _id : '';
   }
-
+  
   public async attached():Promise<void> {
+    await this.init();
+    console.log(await this.channel);
+    await this.channel.subscribe(async message => {
+      console.log('new message came: ',{message: message.data});
+      if(!this.messages.includes(message._id)){
+        this.messages.push(message.data);
+        const messagesElem = await window.document.querySelector('.container');
+        window.scrollTo(0,messagesElem.scrollHeight);
+      }
+    });
 
     const ceramic = new CeramicClient(process.env.CERAMIC_API_URL);
     this.idx = new IDX({ ceramic })
 
     this.inputRef.addEventListener('keydown', (e) => this.handleKeypress(e));
 
-    await this.auth.init();
     await this.loadConversation();
     const messagesElem = window.document.querySelector('.container');
     window.scrollTo(0,messagesElem.scrollHeight);
 
-    this.messagesService = global.setInterval(()=>this.loadConversation(), 1000);
+    // this.messagesService = global.setInterval(()=>this.loadConversation(), 1000);
   }
 
   deactivate(): void {
-    clearInterval(this.messagesService);
+    // clearInterval(this.messagesService);
+    this.channel.unsubscribe();
   }
 
   async addMessage(message = ''): Promise<void> {
@@ -86,7 +103,7 @@ export class App {
         'comment': message,
         'metadata': profile,
         'replyTo' : this.showReply,
-        'threadId': `cl_descussion:${this.auth.chainId}`,
+        'threadId': this.channelName,
         'url': encodeURIComponent( process.env.APP_URL ),
       });
 
@@ -94,8 +111,7 @@ export class App {
         this.isLoading = false;
         this.message = "";
         this.showReply = '';
-
-        await this.loadConversation();
+        this.messages.push(res.data);
         const messagesElem = await window.document.querySelector('.container');
         window.scrollTo(0,messagesElem.scrollHeight);
       }
@@ -211,7 +227,7 @@ export class App {
 
   getTimeDistance(date: string): string {
   
-      const formatDistanceLocale = {
+    const formatDistanceLocale = {
       lessThanXSeconds: '{{count}}s',
       xSeconds: '{{count}}s',
       halfAMinute: '30s',

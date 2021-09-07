@@ -142,6 +142,7 @@ export class Auth {
       this.wallet = {
         address: accounts[0]
       }
+      this.isConnected = true;
     } else {
       this.wallet = {
         address: '',
