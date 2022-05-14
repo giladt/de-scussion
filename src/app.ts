@@ -1,8 +1,7 @@
 import './app.css';
 import { autoinject, bindable } from "aurelia-framework";
-import { EventAggregator } from 'aurelia-event-aggregator';
 import axios from 'axios';
-import { format, formatDistanceToNowStrict } from 'date-fns'
+import { formatDistanceToNowStrict } from 'date-fns'
 import { Auth } from './resources/auth';
 
 import CeramicClient from '@ceramicnetwork/http-client';
@@ -15,8 +14,8 @@ interface IMessage {
   author: string,
   metadata: any,
   replyTo?: string,
-  upvote: number,
-  downvote: number,
+  upvotes: Array<string>,
+  downvotes: Array<string>,
   timestamp: number,
 }
 
@@ -58,15 +57,6 @@ export class App {
   
   public async attached():Promise<void> {
     await this.init();
-    console.log(await this.channel);
-    await this.channel.subscribe(async message => {
-      console.log('new message came: ',{message: message.data});
-      if(!this.messages.includes(message._id)){
-        this.messages.push(message.data);
-        const messagesElem = await window.document.querySelector('.container');
-        window.scrollTo(0,messagesElem.scrollHeight);
-      }
-    });
 
     const ceramic = new CeramicClient(process.env.CERAMIC_API_URL);
     this.idx = new IDX({ ceramic })
@@ -77,6 +67,13 @@ export class App {
     const messagesElem = window.document.querySelector('.container');
     window.scrollTo(0,messagesElem.scrollHeight);
 
+    this.channel.subscribe(message => {
+      if(!this.messages.includes(message._id)){
+        this.messages.push(message.data);
+        const messagesElem = window.document.querySelector('.container');
+        window.scrollTo(0,messagesElem.scrollHeight);
+      }
+    });
     // this.messagesService = global.setInterval(()=>this.loadConversation(), 1000);
   }
 
@@ -95,16 +92,18 @@ export class App {
     try {
       // Profile imported from ceramic IDX
       const profile = await this.loadProfile(this.auth.wallet.address);
+      
       const url = `https://theconvo.space/api/comments?apikey=${ process.env.CONVO_API_KEY }`;
+      console.log("API_KEY", url, "APP_URL", process.env.APP_URL);
       
       const res = await axios.post(url, {
         'token': token,
         'signerAddress': this.auth.wallet.address,
         'comment': message,
+        'url': encodeURIComponent( process.env.APP_URL ),
+        'threadId': this.channelName,
         'metadata': profile,
         'replyTo' : this.showReply,
-        'threadId': this.channelName,
-        'url': encodeURIComponent( process.env.APP_URL ),
       });
 
       if(res.status === 200) {
@@ -129,26 +128,42 @@ export class App {
 
     const token = auth.message;
     try {
-      const message = await (await axios.get(`https://theconvo.space/api/comment?commentId=${_id}&apikey=${ process.env.CONVO_API_KEY }`)).data;
+      const url = `https://theconvo.space/api/comment?commentId=${_id}&apikey=${ process.env.CONVO_API_KEY }`;
+      console.log({url});
+      
+      const message = await (await axios.get(url)).data;
+      console.log({message});
       const types = ['toggleUpvote','toggleDownvote'];
       const endpoints = {toggleUpvote: 'upvotes',toggleDownvote: 'downvotes'};
       const typeInverse = types[types.length - types.indexOf(type) - 1];
-      
+
+      if(message[endpoints[type]].includes(this.auth.wallet.address)) {
+        message[endpoints[type]].splice(message[endpoints[type]].indexOf(this.auth.wallet.address), 1);
+      } else {
+        message[endpoints[type]].push(this.auth.wallet.address);
+      }
+
       if(message[endpoints[typeInverse]].includes(this.auth.wallet.address)) {
+
+        message[endpoints[typeInverse]].splice(message[endpoints[typeInverse]].indexOf(this.auth.wallet.address), 1);
+
         await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
-          'signerAddress': this.auth.wallet.address,
           'token': token,
+          'signerAddress': this.auth.wallet.address,
           'commentId': _id,
           'type': typeInverse,
         });
       }
 
       await axios.post(`https://theconvo.space/api/vote?apikey=${ process.env.CONVO_API_KEY }`, {
-        'signerAddress': this.auth.wallet.address,
         'token': token,
+        'signerAddress': this.auth.wallet.address,
         'commentId': _id,
         'type': type,
       });
+
+      this.messages.filter(message => message._id === _id)[0].upvotes = message.upvotes;
+      this.messages.filter(message => message._id === _id)[0].downvotes = message.downvotes;
       this.isLoading = false;
     } catch (error) {
       console.error(error.message);
@@ -168,7 +183,7 @@ export class App {
       const profile:any = await this.idx.get('basicProfile', author + '@eip155:' + this.auth.chainId)
       // Currently IDX.get returns Promise<unknown>
       // Follow changes on: https://developers.idx.xyz/reference/idx/#get
-      console.log('did',profile);
+      console.log('did',profile, author);
       if(profile !== null) {
         return {
           address: author,
@@ -183,30 +198,37 @@ export class App {
         name: 'Anonymous',
       }
     } catch (error) {
-      console.error('No DID Profile. Fallback to 3Box', error.message);
+      console.error('No DID Profile. Fallback to 3Box.', error.message);
     }
 
     // Retrieve profile info from (legacy) 3Box
-    return await getLegacy3BoxProfileAsBasicProfile(author).then(profile => {
+    try {
+      return await getLegacy3BoxProfileAsBasicProfile(author).then(profile => {
 
-      if(profile !== null) {
-        return {
-          address: author,
-          image: profile.image.original.src.replace('ipfs://', 'https://ipfs.io/ipfs/'),
-          name: profile.name,
+        if(profile !== null) {
+          return {
+            address: author,
+            image: profile.image.original.src.replace('ipfs://', 'https://ipfs.io/ipfs/'),
+            name: profile.name,
+          }
+        } else {
+          return {
+            address: author,
+            image: null,
+            name: null,
+          };
         }
-      } else {
-        return {
-          address: author,
-          image: null,
-          name: null,
-        };
-      }
-    });
+      });
+    } catch (error) {
+      console.error('No 3Box Profile.', error.message);
+    }
   }
 
   async loadConversation():Promise<void> {
+    console.log("Loading Conversation");
+    
     const newMessages = (await axios.get(`https://theconvo.space/api/comments?threadId=cl_descussion:${this.auth.chainId}&apikey=${ process.env.CONVO_API_KEY }`)).data;
+    console.log("Conversation Loaded", newMessages);
 
     if(newMessages && JSON.stringify([...newMessages]) !== JSON.stringify([...this.messages])) {
       newMessages.map(async message => {

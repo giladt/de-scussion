@@ -1,8 +1,7 @@
-import { EthereumEvent } from './web3types';
 import { autoinject } from "aurelia-framework";
 import axios from 'axios';
 import { ethers,  } from 'ethers';
-import { Ethereumish } from '../resources/web3types';
+import { Ethereumish } from 'resources/web3types';
 
 declare global {
   interface Window {
@@ -97,6 +96,7 @@ export class Auth {
       const timestamp = Date.now();
       const signer = await this.provider.getSigner();
       const signerAddress = await signer.getAddress();
+      const chain = "ethereum";
       const data = `I allow this site to access my data on The Convo Space using the account ${signerAddress}. Timestamp:${timestamp}`;
 
       try {
@@ -111,6 +111,7 @@ export class Auth {
             signerAddress,
             signature,
             timestamp,
+            chain,
           }
         ));
 
