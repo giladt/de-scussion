@@ -11,16 +11,16 @@
   "dependencies": {
     "@ceramicnetwork/http-client": "1.2.0",
     "@ceramicstudio/idx": "0.12.1",
-    "ably": "1.2.13",
+    "ably": "1.2.41",
     "aurelia-animator-css": "1.0.4",
     "aurelia-bootstrapper": "2.3.3",
     "aurelia-fetch-client": "1.8.2",
-    "axios": "0.21.1",
+    "axios": "1.6.0",
     "cross-env": "7.0.3",
     "date-fns": "2.23.0",
     "dotenv": "10.0.0",
     "ethers": "5.4.5",
-    "hardhat": "2.6.2",
+    "hardhat": "2.14.0",
     "serve": "14.2.0"
   },
   "devDependencies": {
